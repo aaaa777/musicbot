@@ -1,1 +1,1 @@
-Music bot for disscord
+Music bot for discord
