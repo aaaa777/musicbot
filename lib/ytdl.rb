@@ -112,8 +112,9 @@ module YoutubeDL
     end
     
     # File io pipe may leach eof faster than ffmpeg writing speed
+    # so dont return io piping directly mp3 cache file
     def self.create_io_from_partfile(url)
-      command = "ffmpeg -i #{url.to_filename}.part - -"
+      command = "ffmpeg -loglevel 0 -nostdin -i \"#{url.to_filename}.part\" -f s16le -ar 48000 -ac 2 pipe:1"
       IO.popen(command)
     end
 
