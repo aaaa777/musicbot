@@ -65,6 +65,7 @@ module YoutubeDL
       
     end
 
+    # note: most of private methods should be called in cache directory
     private
 
     # return IO
@@ -73,9 +74,24 @@ module YoutubeDL
       
     end
 
+    # start caching process
+    # url is respondable for #to_filename
     def start_caching(url)
-      youtubedl_download(url)
-
+      filename = url.to_filename
+      @download_threads[filename] = Thread.new do
+        Thread.current. if @download_threads[filename] && @download_threads[filename].alive?
+        # download via youtubedl
+        youtubedl_download(url, filename)
+        
+        # cache audio data as mp3
+        ffmpeg_encode_mp3(filename)
+        
+        # remove files other than mp3 file
+        cleanup(filename)
+      
+        # remove this thread from download thread list
+        @download_threads.delete(filename)
+      end
     end
 
     def youtubedl_command
@@ -87,23 +103,33 @@ module YoutubeDL
       Dir["#{filematch}.*"]
     end
 
-    def youtubedl_download(url, encode_to_mp3 = true)
-      filename = url.to_filename
-      return if @download_threads[filename] && @download_threads[filename].alive?
-      @download_threads[filename] = Thread.new do
-        while true
-          command_args = "-o #{filename} #{url.to_s}".split(' ')
-          o, e, s = Open3.capture3([youtubedl_command, 'youtube-dl'], command_args)
-          break if s.success?
-          sleep 0.5
-        end
-        FFmpeg.encode_mp3(filename) if encode_to_mp3
-        @download_threads.delete(filename)
+    def youtubedl_download(url, filename = nil, encode_to_mp3 = true)
+      filename = url.to_filename unless filename
+      while true
+        command_args = "-o #{filename} #{url.to_s}".split(' ')
+        o, e, s = Open3.capture3([youtubedl_command, 'youtube-dl'], command_args)
+
+        # may identify 403 or another error...
+        break if s.success?
+        sleep 0.5
       end
+      
+    end
+    
+    def ffmpeg_encode_mp3(filename)
+      
+      
+      FFmpeg.encode_mp3(filename)# if encode_to_mp3
 
     end
 
-    
+    def cleanup(filename)
+      # clear files other than mp3
+      Dir["#{File.basename(filename)}*"].each do |file|
+        next if File.extname(file) == '.mp3'
+        FileUtils.rm(file)
+      end
+    end
     
   end
   
@@ -125,11 +151,6 @@ module YoutubeDL
     def encode_mp3(filename)
       command = "ffmpeg -loglevel 0 -nostdin -i \"#{filename}\" #{File.basename(filename)}.mp3"
       Open3.capture3(command)
-
-      Dir["#{File.basename(filename)}*"].each do |file|
-        next if file == "#{File.basename(filename)}.mp3"
-        FileUtils.rm(file)
-      end
     end
 
   end
