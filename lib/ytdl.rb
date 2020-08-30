@@ -73,7 +73,8 @@ module YoutubeDL
       
     end
 
-    def restore_process
+    def start_caching(url)
+      youtubedl_download(url)
 
     end
 
@@ -86,7 +87,7 @@ module YoutubeDL
       Dir["#{filematch}.*"]
     end
 
-    def youtubedl_download(url)
+    def youtubedl_download(url, encode_to_mp3 = true)
       filename = url.to_filename
       return if @download_threads[filename] && @download_threads[filename].alive?
       @download_threads[filename] = Thread.new do
@@ -96,6 +97,7 @@ module YoutubeDL
           break if s.success?
           sleep 0.5
         end
+        FFmpeg.encode_mp3(filename) if encode_to_mp3
         @download_threads.delete(filename)
       end
 
@@ -107,15 +109,27 @@ module YoutubeDL
   
   class FFmpeg
     
-    def self.to_mp3(filename)
-      
-    end
+    #def self.encode_mp3(filename)
+      #command = "ffmpeg -i #{filename} #{filenam}.mp3"
+      #Open3.capture3(command)
+    #end
     
     # File io pipe may leach eof faster than ffmpeg writing speed
     # so dont return io piping directly mp3 cache file
     def self.create_io_from_partfile(url)
       command = "ffmpeg -loglevel 0 -nostdin -i \"#{url.to_filename}.part\" -f s16le -ar 48000 -ac 2 pipe:1"
       IO.popen(command)
+    end
+
+    # filename is some file it contains audio data, mostly downloaded by youtubedl.
+    def encode_mp3(filename)
+      command = "ffmpeg -loglevel 0 -nostdin -i \"#{filename}\" #{File.basename(filename)}.mp3"
+      Open3.capture3(command)
+
+      Dir["#{File.basename(filename)}*"].each do |file|
+        next if file == "#{File.basename(filename)}.mp3"
+        FileUtils.rm(file)
+      end
     end
 
   end
