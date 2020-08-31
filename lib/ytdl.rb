@@ -109,13 +109,14 @@ module YoutubeDL
       end
     end
 
+    # deprecated
     def youtubedl_command
       YTDLCommandFullPath || 'youtube-dl'
     end
 
     def search_cache(url)
       filematch = url.to_filename('*')
-      Dir["#{filematch}.*"]
+      Dir["#{filematch}*"]
     end
 
     def youtubedl_download(url, filename = nil, encode_to_mp3 = true)
