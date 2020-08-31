@@ -57,10 +57,6 @@ module YoutubeDL
         files.empty?
 
 
-
-        
-
-
       end
       
     end
@@ -74,6 +70,7 @@ module YoutubeDL
       
     end
 
+    # url => encoded_io
     def create_direct_io(url)
       command = "youtube-dl -f mp4 -o - #{url.to_s} | ffmpeg -loglevel 0 -i - -f s16le -ar 48000 -ac 2 pipe:1"
       IO.popen(command)
