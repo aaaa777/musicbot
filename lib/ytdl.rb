@@ -74,6 +74,11 @@ module YoutubeDL
       
     end
 
+    def create_direct_io(url)
+      command = "youtube-dl -f mp4 -o - #{url.to_s} | ffmpeg -loglevel 0 -i - -f s16le -ar 48000 -ac 2 pipe:1"
+      IO.popen(command)
+    end
+
     # start caching process
     # url is respondable for #to_filename
     def start_caching(url)
