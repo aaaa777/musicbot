@@ -16,14 +16,14 @@ module YoutubeDL
       case uri.hostname
 
       # in case of youtube, uri will be exchanged into https://youtu.be/#{id}
-      when '(www.)?youtube.com'
+      when /(www.)?youtube.com/
         # in case of https://www.youtube.com/watch?v=#{id}
         # without www domain redirects to www.youtube.com
-        query = URI.decode_www_form(uri.query)
+        query = URI.decode_www_form(uri.query).to_h
         id = query['v']
 
         uri = URI.parse(youtube_url(id))
-        uri = URL::Generic.new(*parse_arr(uri), original_url: original_url, service: YOUTUBE_IDENTIFIER)
+        uri = URL::Generic.new(*parse_arr(uri), id: id, original_url: original_url, service: YOUTUBE_IDENTIFIER)
 
 
       when 'youtu.be'
@@ -127,7 +127,7 @@ module YoutubeDL
         #build_elements = [:scheme ,:userinfo, :host, :port, :registry, :path, :opaque, :query, :fragment]
         #super(hash.select{|k| build_elements.include?(k)})
         super(*arr)
-
+        p hash
         # YoutubeDL original param
         @service, @original_url, @id = hash[:service], hash[:original_url], hash[:id]
       end
@@ -136,8 +136,8 @@ module YoutubeDL
       # cache filename => service-id.mp3
       # ex: niconico-12345.mp3, youtube-ABCDE.mp3, url-#{url-hash}
       # ~~ filename should not contain '-' ather than separator of service and id ~~
-      def to_filename(ext = 'mp3')
-        "#{@service.to_s}-#{@id.to_s}.#{ext}"
+      def to_filename(ext = nil)
+        ext ? "#{@service.to_s}-#{@id.to_s}.#{ext}" : "#{@service.to_s}-#{@id.to_s}"
       end
 
     end
